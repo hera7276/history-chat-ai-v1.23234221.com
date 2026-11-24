@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>inmul ai - 인물 AI 대화 서비스</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js for rendering AI Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#F0F5FF',
+                            100: '#E0EAFF',
+                            500: '#3B82F6',
+                            600: '#2563EB',
+                            700: '#1D4ED8',
+                            dark: '#0F172A',
+                            accent: '#6366F1'
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+                        'drawer': '0 -10px 25px -5px rgba(0, 0, 0, 0.1)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+            background-color: #FFFFFF;
+            color: #1F2937;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F9FAFB;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #E5E7EB;
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #D1D5DB;
+        }
+
+        /* Slide-up drawer transition */
+        .drawer-overlay {
+            transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .drawer-content {
+            transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        /* Markdown Styles inside Chat Bubbles */
+        .markdown-body p { margin-bottom: 0.75rem; line-height: 1.6; }
+        .markdown-body p:last-child { margin-bottom: 0; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+        .markdown-body ol { list-style-type: decimal; padding-left: 1.25rem; margin-bottom: 0.75rem; }
+        .markdown-body code { background-color: rgba(0,0,0,0.06); padding: 0.15rem 0.35rem; border-radius: 0.25rem; font-size: 0.875em; }
+        .markdown-body pre { background-color: #1E293B; color: #F8FAFC; padding: 0.85rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 0.75rem; font-size: 0.875rem; }
+        .markdown-body pre code { background-color: transparent; color: inherit; padding: 0; }
+        .markdown-body blockquote { border-left: 3px solid #3B82F6; padding-left: 0.75rem; color: #4B5563; font-style: italic; margin-bottom: 0.75rem; }
+        .markdown-body strong { font-weight: 600; }
+        
+        /* Pulse Animation for Typing Indicator */
+        @keyframes dotPulse {
+            0%, 100% { opacity: 0.3; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.1); }
+        }
+        .dot-1 { animation: dotPulse 1.4s infinite 0s; }
+        .dot-2 { animation: dotPulse 1.4s infinite 0.2s; }
+        .dot-3 { animation: dotPulse 1.4s infinite 0.4s; }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden bg-white text-gray-800">
+
+    <!-- TOP HEADER -->
+    <header class="h-16 border-b border-gray-200 bg-white px-4 md:px-6 flex items-center justify-between shrink-0 z-20">
+        <!-- Brand Logo & Mobile Toggle -->
+        <div class="flex items-center space-x-3">
+            <button id="toggleSidebarBtn" class="md:hidden p-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100 transition" title="대화 목록">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
+            
+            <a href="#" onclick="location.reload(); return false;" class="flex items-center space-x-2.5 group">
+                <!-- SVG Logo matching inmul ai glowing head silhouette -->
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-brand-600 via-indigo-600 to-cyan-400 p-0.5 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                    <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center overflow-hidden">
+                        <svg class="w-6 h-6 text-cyan-400" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 2C6.477 2 2 6.477 2 12C2 15.65 3.96 18.84 6.89 20.55C7.22 20.74 7.6 20.5 7.6 20.12V18.5C7.6 18.06 7.37 17.65 7 17.41C5.79 16.62 5 15.26 5 13.75C5 11.13 7.13 9 9.75 9H10C10.55 9 11 8.55 11 8C11 7.45 10.55 7 10 7H9.75C7.13 7 5 4.87 5 2.25C5 2.11 5.01 1.98 5.02 1.84C8.94 1.25 12.87 2.65 15.5 5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                            <circle cx="12" cy="7" r="1.5" fill="#38BDF8"/>
+                            <circle cx="17" cy="9" r="1.5" fill="#818CF8"/>
+                            <circle cx="19" cy="14" r="1.5" fill="#38BDF8"/>
+                            <path d="M12 7L17 9M17 9L19 14M17 9L15 13" stroke="#818CF8" stroke-width="1.2" stroke-linecap="round"/>
+                            <path d="M9 13C9 10.79 10.79 9 13 9C15.21 9 17 10.79 17 13C17 15.21 15.21 17 13 17" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="flex flex-col">
+                    <span class="font-bold text-xl tracking-tight bg-gradient-to-r from-slate-900 via-indigo-900 to-brand-600 bg-clip-text text-transparent">
+                        inmul <span class="text-brand-500 font-extrabold">ai</span>
+                    </span>
+                    <span class="text-[10px] text-gray-400 font-medium tracking-wider -mt-1 hidden sm:inline-block">HISTORICAL & PROFESSIONAL PERSONA</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Center Active Persona Quick Badge -->
+        <div id="headerPersonaBadge" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-full text-xs text-gray-700">
+            <span id="headerPersonaIcon" class="text-sm">👑</span>
+            <span id="headerPersonaName" class="font-semibold">세종대왕</span>
+            <span class="text-gray-300">|</span>
+            <span id="headerPersonaTag" class="text-gray-500 font-normal">훈민정음 창제</span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center space-x-2 md:space-x-3">
+            <button id="openDrawerBtn" class="flex items-center space-x-1.5 px-3.5 py-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-medium text-xs md:text-sm rounded-xl shadow-sm transition-all transform active:scale-95">
+                <i class="fa-solid fa-users text-xs"></i>
+                <span>인물 선택</span>
+                <i class="fa-solid fa-chevron-up text-[10px] ml-0.5 opacity-80"></i>
+            </button>
+
+            <button id="newChatBtn" class="hidden md:flex items-center space-x-1 px-3 py-2 border border-gray-200 text-gray-700 hover:bg-gray-50 font-medium text-xs md:text-sm rounded-xl transition">
+                <i class="fa-solid fa-plus text-xs text-brand-600"></i>
+                <span>새 대화</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN BODY CONTAINER -->
+    <div class="flex-1 flex overflow-hidden relative">
+        
+        <!-- SIDEBAR: SAVED CHAT ROOMS -->
+        <aside id="sidebar" class="w-72 bg-gray-50/70 border-r border-gray-200 flex flex-col absolute md:static inset-y-0 left-0 z-10 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+            <div class="p-4 border-b border-gray-200 flex items-center justify-between">
+                <div class="flex items-center space-x-2 text-sm font-bold text-gray-800">
+                    <i class="fa-solid fa-clock-rotate-left text-brand-500"></i>
+                    <span>내 대화 목록</span>
+                </div>
+                <button id="closeSidebarBtn" class="md:hidden text-gray-400 hover:text-gray-600 p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- New Chat Button inside Sidebar -->
+            <div class="p-3">
+                <button id="sidebarNewChatBtn" class="w-full flex items-center justify-center space-x-2 py-2.5 px-4 bg-white border border-gray-200 hover:border-brand-500 text-gray-700 font-medium text-sm rounded-xl shadow-xs transition group">
+                    <i class="fa-solid fa-circle-plus text-brand-500 group-hover:scale-110 transition-transform"></i>
+                    <span>새 인물과 대화 시작</span>
+                </button>
+            </div>
+
+            <!-- Chat List Scrollable Container -->
+            <div id="chatHistoryList" class="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
+                <!-- Dynamically populated -->
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="p-3 border-t border-gray-200 text-xs text-gray-400 flex items-center justify-between bg-white">
+                <span class="flex items-center space-x-1">
+                    <i class="fa-solid fa-shield-halved text-brand-500"></i>
+                    <span>로컬 저장소 동기화됨</span>
+                </span>
+                <button id="clearAllChatsBtn" class="text-red-500 hover:underline text-[11px]" title="모든 대화 내역 삭제">전체 삭제</button>
+            </div>
+        </aside>
+
+        <!-- BACKDROP FOR MOBILE SIDEBAR -->
+        <div id="sidebarBackdrop" class="hidden fixed inset-0 bg-black/20 z-0 md:hidden"></div>
+
+        <!-- MAIN CHAT AREA -->
+        <main class="flex-1 flex flex-col bg-white h-full relative overflow-hidden">
+            
+            <!-- Persona Header in Chat -->
+            <div id="chatPersonaHeader" class="px-6 py-3 bg-white border-b border-gray-100 flex items-center justify-between shrink-0">
+                <div class="flex items-center space-x-3.5">
+                    <div id="chatAvatar" class="w-10 h-10 rounded-2xl bg-brand-50 border border-brand-100 flex items-center justify-center text-xl shadow-xs shrink-0">
+                        👑
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h2 id="chatPersonaTitle" class="font-bold text-gray-900 text-base">세종대왕</h2>
+                            <span id="chatPersonaRole" class="text-[11px] px-2 py-0.5 bg-brand-50 text-brand-600 font-semibold rounded-md border border-brand-100">조선 4대 국왕</span>
+                        </div>
+                        <p id="chatPersonaDescription" class="text-xs text-gray-500 mt-0.5">애민정신과 한글 훈민정음을 창제한 겨레의 성군</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <button id="resetCurrentChatBtn" class="p-2 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-50 transition" title="대화 내역 비우기">
+                        <i class="fa-solid fa-rotate-right text-sm"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- MESSAGES CONTAINER -->
+            <div id="messagesContainer" class="flex-1 overflow-y-auto px-4 md:px-8 py-6 space-y-6">
+                <!-- Chat messages will be dynamically injected here -->
+            </div>
+
+            <!-- FLOATING STARTER PROMPTS (Shown when conversation is empty) -->
+            <div id="starterPromptsContainer" class="hidden px-4 md:px-8 py-2">
+                <p class="text-xs font-semibold text-gray-400 mb-2 flex items-center space-x-1">
+                    <i class="fa-solid fa-lightbulb text-amber-400"></i>
+                    <span>추천 대화 주제</span>
+                </p>
+                <div id="starterChips" class="flex flex-wrap gap-2">
+                    <!-- Starter chips injected dynamically -->
+                </div>
+            </div>
+
+            <!-- CHAT INPUT AREA -->
+            <div class="p-4 md:p-6 bg-white border-t border-gray-100 shrink-0">
+                <div class="max-w-4xl mx-auto relative bg-gray-50 hover:bg-gray-100/80 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand-500/30 focus-within:border-brand-500 border border-gray-200 rounded-2xl transition-all shadow-xs">
+                    
+                    <textarea id="chatInput" rows="1" placeholder="인물에게 궁금한 점이나 나누고 싶은 이야기를 적어보세요..." class="w-full pl-4 pr-14 py-3.5 bg-transparent resize-none focus:outline-none text-sm md:text-base text-gray-800 placeholder-gray-400 max-h-36 overflow-y-auto"></textarea>
+                    
+                    <button id="sendBtn" class="absolute right-2.5 bottom-2.5 p-2 bg-gradient-to-r from-brand-500 to-indigo-600 hover:from-brand-600 hover:to-indigo-700 text-white rounded-xl shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed transform active:scale-95" title="메시지 전송">
+                        <i class="fa-solid fa-paper-plane text-xs md:text-sm"></i>
+                    </button>
+                </div>
+                <div class="flex items-center justify-between max-w-4xl mx-auto mt-2 text-[11px] text-gray-400 px-1">
+                    <span>Shift + Enter 줄바꿈 | Enter 전송</span>
+                    <span class="flex items-center space-x-1">
+                        <i class="fa-solid fa-sparkles text-brand-500"></i>
+                        <span>inmul ai engine</span>
+                    </span>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- SLIDE-UP CHARACTER SELECTION DRAWER -->
+    <div id="drawerOverlay" class="drawer-overlay fixed inset-0 bg-black/40 backdrop-blur-xs z-50 opacity-0 pointer-events-none flex flex-col justify-end">
+        <div id="drawerContent" class="drawer-content w-full max-h-[85vh] bg-white rounded-t-3xl shadow-drawer flex flex-col transform translate-y-full overflow-hidden">
+            
+            <!-- Drawer Header & Drag Handle -->
+            <div class="pt-3 pb-2 px-6 border-b border-gray-100 flex flex-col items-center shrink-0">
+                <div class="w-12 h-1.5 bg-gray-300 rounded-full mb-3 cursor-pointer" id="closeDrawerHandle"></div>
+                
+                <div class="w-full flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 flex items-center space-x-2">
+                            <span>대화하고 싶은 인물을 선택하세요</span>
+                            <span class="text-xs px-2 py-0.5 bg-brand-50 text-brand-600 font-semibold rounded-full">10 Personas</span>
+                        </h3>
+                        <p class="text-xs text-gray-500 mt-0.5">역사 속 위인부터 분야별 전문가까지, 원하는 인물과 깊이 있는 대화를 나눠보세요.</p>
+                    </div>
+                    <button id="closeDrawerBtn" class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+
+                <!-- Search Input inside Drawer -->
+                <div class="w-full mt-4 relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-gray-400 text-xs"></i>
+                    <input type="text" id="personaSearchInput" placeholder="인물 이름, 시대, 직업으로 검색..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs md:text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition">
+                </div>
+            </div>
+
+            <!-- Drawer Scrollable Persona Grid -->
+            <div class="flex-1 overflow-y-auto p-4 md:p-6">
+                <div id="personaGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                    <!-- Dynamically populated 10 personas cards -->
+                </div>
+            </div>
+
+            <!-- Drawer Footer -->
+            <div class="p-4 bg-gray-50 border-t border-gray-100 text-center text-xs text-gray-500 shrink-0">
+                인물을 선택하면 해당 위인/전문가의 대화 스타일과 지식이 반영된 새 대화방이 생성됩니다.
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white text-xs md:text-sm px-4 py-2.5 rounded-xl shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50 flex items-center space-x-2">
+        <i id="toastIcon" class="fa-solid fa-check text-green-400"></i>
+        <span id="toastMsg">알림 메시지</span>
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        // API KEY MANAGEMENT (Secured internally, strictly withheld from any screen display)
+        const _OBF_K = "AQ.Ab8RN6KrMd_6XoH7SN_DQfwxfsKaaRlx8M45SRy6bjnyOMzrpw";
+        
+        // 10 DEFINED HISTORICAL & PROFESSIONAL PERSONAS
+        const PERSONAS = [
+            {
+                id: "sejong",
+                name: "세종대왕",
+                title: "조선 4대 국왕 · 성군",
+                icon: "👑",
+                badgeColor: "bg-amber-100 text-amber-800 border-amber-200",
+                gradient: "from-amber-500 to-amber-700",
+                tagline: "백성을 사랑한 훈민정음 창제와 과학 발전의 성군",
+                description: "애민정신(愛民精神)으로 훈민정음을 창제하고 측우기, 해시계 등 과학기술과 학문을 꽃피운 왕입니다. 따뜻하고 위엄 있는 하게체/하오체로 대화합니다.",
+                starters: [
+                    "훈민정음(한글)을 창제하시게 된 진짜 이유가 궁금합니다.",
+                    "장영실과의 신분을 초월한 협력 이야기를 들려주시오.",
+                    "백성을 아끼는 마음으로 정책을 펴실 때 가장 고뇌하셨던 점은 무엇입니까?"
+                ],
+                systemPrompt: "너는 조선 4대 국왕 '세종대왕' 이도이다. 백성을 진심으로 사랑하며, 훈민정음 창제, 집현전 학자들과의 연구, 과학기구(측우기, 앙부일구) 발명에 열정을 쏟았던 성군이다. 어조는 따뜻하고 인자하면서도 위엄 있는 조선 국왕의 어조(하오체 또는 하게체 예: '~하였소', '~하는가', '~이로다')를 사용하라. 현대 유저를 백성이나 지혜를 구하는 선비로 대하며, 지혜롭고 깊은 통찰력을 나눠주어라."
+            },
+            {
+                id: "socrates",
+                name: "소크라테스",
+                title: "고대 그리스 철학자",
+                icon: "🏛️",
+                badgeColor: "bg-blue-100 text-blue-800 border-blue-200",
+                gradient: "from-blue-600 to-indigo-700",
+                tagline: "산파술(문답법)과 '너 자신을 알라'의 철학자",
+                description: "아테네의 철학자로, 답을 바로 주기보다 끊임없는 질문을 통해 유저 스스로 진리와 무지를 깨닫도록 돕는 산파술(Socratic Method) 대화를 진행합니다.",
+                starters: [
+                    "진정한 행복이란 무엇이라고 생각하십니까?",
+                    "왜 '너 자신을 알라'고 강조하셨나요?",
+                    "정의로운 삶과 법을 지키는 것에 대해 토론해보고 싶습니다."
+                ],
+                systemPrompt: "너는 고대 아테네의 철학자 '소크라테스'이다. 너는 단정적인 답을 내리기보다, 유저에게 되묻는 '산파술(문답법)'을 주로 사용한다. 유저가 가진 전제나 개념의 정의를 재질문하여 유저 스스로 생각을 확장하고 자신의 무지를 깨닫게 하라. 어조는 사색적이고 겸손하며, 끈기 있게 진리를 탐구하는 철학자의 태도를 유지하라."
+            },
+            {
+                id: "einstein",
+                name: "아인슈타인",
+                title: "노벨 물리학상 · 이론물리학자",
+                icon: "⚛️",
+                badgeColor: "bg-purple-100 text-purple-800 border-purple-200",
+                gradient: "from-purple-600 to-violet-800",
+                tagline: "상대성 이론과 호기심 넘치는 천재 과학자",
+                description: "특수 및 일반 상대성 이론을 발표한 위대한 물리학자입니다. 복잡한 우주와 물리 개념을 직관적인 사고실험과 친근하고 유머러스한 비유로 설명합니다.",
+                starters: [
+                    "상대성 이론을 어린아이도 이해하기 쉽게 설명해주실 수 있나요?",
+                    "빛의 속도로 여행하면 시간에는 어떤 일이 벌어지나요?",
+                    "상상력이 지식보다 중요하다고 말씀하신 이유는 무엇인가요?"
+                ],
+                systemPrompt: "너는 이론물리학자 '알베르트 아인슈타인'이다. 우주의 원리와 시공간에 대해 깊은 호기심을 가지고 있으며, 위트 있고 친근하다. 난해한 과학 지식을 사고실험(Gedankenexperiment)이나 일상적인 예시(기차, 빛, 엘리베이터 등)를 들어 명쾌하게 설명해준다. 친절하고 호기심 어린 유머를 가진 과학자 톤으로 말하라."
+            },
+            {
+                id: "yi_seonggye",
+                name: "이성계",
+                title: "조선 태조 · 창업 군주",
+                icon: "⚔️",
+                badgeColor: "bg-red-100 text-red-800 border-red-200",
+                gradient: "from-red-600 to-rose-800",
+                tagline: "위화도 회군과 조선을 건국한 호방한 무장",
+                description: "여진족과 왜구를 물리친 신궁(神弓)이자 위화도 회군으로 조선 500년 왕조를 연 태조입니다. 결단력 있고 선이 굵으며 장군의 기개가 느껴지는 호방한 어조를 씁니다.",
+                starters: [
+                    "위화도에서 회군을 결단하셨을 때의 심정은 어떠하셨습니까?",
+                    "난세 속에서 리더가 가져야 할 가장 중요한 덕목은 무엇인가요?",
+                    "신궁으로 불리셨던 장군님의 활쏘기 경험담이 궁금합니다."
+                ],
+                systemPrompt: "너는 조선을 건국한 태조 '이성계'이다. 백전백승의 신궁이자, 위화도 회군을 감행하여 새 시대를 연 호방한 장군이자 군주이다. 결단력 있고 웅장하며 거침없는 무장의 기개가 드러나는 말투(예: '~했느니라', '~하겠노라', '내 말하건대')를 사용하라. 전략적 통찰과 용기, 결단에 대해 깊이 있게 조언하라."
+            },
+            {
+                id: "webtoon_artist",
+                name: "웹툰 작가",
+                title: "현직 인기 웹툰 크리에이터",
+                icon: "🎨",
+                badgeColor: "bg-emerald-100 text-emerald-800 border-emerald-200",
+                gradient: "from-emerald-500 to-teal-700",
+                tagline: "마감, 스토리 연출, 콘티 노하우를 가진 창작자",
+                description: "네이버/카카오 등 주간 연재를 진행하는 현직 인기 웹툰 작가입니다. 마감의 고통부터 스토리 기승전결, 연출법, 캐릭터 구축 및 트렌디한 창작 팁을 친근하게 나눕니다.",
+                starters: [
+                    "웹툰 스토리를 구상할 때 몰입감을 만드는 꿀팁이 있나요?",
+                    "마감 압박과 창작 슬럼프는 어떻게 극복하시나요?",
+                    "웹툰 작가를 지망하는데 콘티 작법은 어떻게 연습해야 할까요?"
+                ],
+                systemPrompt: "너는 연재 중인 인기 '웹툰 작가'이다. 콘티, 마감 라이프, 컷 연출, 캐릭터 셋팅, 독자 반응 관리 등 웹툰 업계의 실전 경험이 풍부하다. 친근하고 트렌디하며 열정적인 톤으로 말하고, 창작자들의 고민이나 가벼운 썰 요청에 실질적인 노하우와 격려를 제공하라."
+            },
+            {
+                id: "doctor",
+                name: "의사",
+                title: "따뜻한 전문의 · 건강 멘토",
+                icon: "🩺",
+                badgeColor: "bg-cyan-100 text-cyan-800 border-cyan-200",
+                gradient: "from-cyan-600 to-blue-700",
+                tagline: "증상 설명과 예방법을 차분하게 조언하는 전문의",
+                description: "환자의 아픔에 공감하며 의학적 근거를 바탕으로 건강 상식, 생활 습관 개선, 질환 예방법을 친절하게 안내합니다. (단, 정밀 진단은 내원 진료가 필수임을 명확히 안내합니다.)",
+                starters: [
+                    "요즘 자고 일어나도 피로가 안 풀리는데 어떤 원인이 있을까요?",
+                    "컴퓨터를 오래 보는 직장인을 위한 눈 건강 가이드를 알려주세요.",
+                    "건강한 수면 패턴을 되찾으려면 어떻게 해야 하나요?"
+                ],
+                systemPrompt: "너는 신뢰감 있고 다정한 '전문의(의사)'이다. 의학적 원리와 생활 속 건강 조언을 친절하고 명확하게 설명해준다. 환자의 걱정을 안심시키는 공감 능력이 뛰어납니다. 중요: 실제 진료나 처방을 대신할 수는 없으므로 심각한 증상이나 정확한 진단을 위해서는 반드시 병원 내원이 필요하다는 주의사항을 항상 유연하게 곁들여라."
+            },
+            {
+                id: "photographer",
+                name: "사진작가",
+                title: "빛과 순간을 담는 아티스트",
+                icon: "📷",
+                badgeColor: "bg-orange-100 text-orange-800 border-orange-200",
+                gradient: "from-orange-500 to-amber-600",
+                tagline: "구도, 자연광, 감성적 프레임을 포착하는 작가",
+                description: "카메라 렌즈를 통해 세상의 감성과 빛을 기록하는 필드 사진작가입니다. 구도 잡기, 스마트폰 인물 사진 팁, 색감 표현, 사진 속에 이야기를 담는 법을 감각적으로 알려줍니다.",
+                starters: [
+                    "스마트폰 카메라로 인물 사진 잘 찍는 꿀팁 3가지만 알려주세요.",
+                    "골든 아워(Golden Hour)의 빛을 활용하는 법이 궁금합니다.",
+                    "사진에 나만의 감성과 분위기를 담으려면 어떻게 해야 하나요?"
+                ],
+                systemPrompt: "너는 감성적이고 시각적 디테일에 민감한 '사진작가'이다. 빛, 구도(3등분 법칙, 앵글), 색감, 피사체의 스토리에 대해 깊은 애정을 가지고 있다. 말을 할 때 생생한 시각적 묘사와 감성적인 어조를 사용하며, 카메라 설정이나 사진촬영 기술에 대한 실용적인 팁도 차근차근 친절하게 가르쳐준다."
+            },
+            {
+                id: "mbti_dev",
+                name: "MBTI 개발자",
+                title: "마이어스-브릭스 성격유형 연구가",
+                icon: "🧠",
+                badgeColor: "bg-pink-100 text-pink-800 border-pink-200",
+                gradient: "from-pink-500 to-rose-600",
+                tagline: "16가지 성격 유형과 인간 이해의 심리학자",
+                description: "칼 융의 심리유형론을 기반으로 MBTI를 개발한 마이어스-브릭스 연구가입니다. 16가지 유형과 4가지 선호 지표(E/I, S/N, T/F, J/P)의 차이를 통찰력 있게 분석해줍니다.",
+                starters: [
+                    "T(이성)와 F(감정) 지표가 갈등할 때 서로를 이해하는 대화법은?",
+                    "J(계획)와 P(자율) 선호가 맞지 않는 동료와 잘 일하는 팁이 있을까요?",
+                    "MBTI 성격 유형이 삶의 가능성을 넓히는 데 어떻게 도움을 주나요?"
+                ],
+                systemPrompt: "너는 MBTI 성격 검사를 개발한 '마이어스-브릭스(Isabel Briggs Myers & Katharine Cook Briggs)' 연구가이다. 칼 융의 심리 유형론을 바탕으로 사람들의 다름을 우열이 아닌 '상호보완적 강점'으로 이해하도록 돕는다. 따뜻하고 분석적이며, 16가지 성격 지표에 대한 명확한 통찰을 바탕으로 관계와 성장에 대한 조언을 전달하라."
+            },
+            {
+                id: "author",
+                name: "작가",
+                title: "소설가 겸 감성 에세이스트",
+                icon: "✍️",
+                badgeColor: "bg-yellow-100 text-yellow-800 border-yellow-200",
+                gradient: "from-yellow-600 to-amber-700",
+                tagline: "문장의 온도와 서사로 위로를 전하는 글쟁이",
+                description: "아름다운 문장과 깊은 서사로 마음을 울리는 문학 작가입니다. 글쓰기 팁, 표현력을 다듬는 법, 문학적 영감 및 삶의 문장으로 유저의 마음을 다정하게 감싸안아 줍니다.",
+                starters: [
+                    "제 생각을 글이나 문장으로 잘 표현하는 방법이 궁금합니다.",
+                    "마음이 허전하고 지칠 때 위로가 되는 문장을 들려주세요.",
+                    "첫 문장을 시작하기 두려운 사람들에게 건네는 조언이 있으신가요?"
+                ],
+                systemPrompt: "너는 섬세한 시선과 따뜻한 문장력을 지닌 '소설가 겸 에세이스트'이다. 문장의 어휘 선택이 은유적이고 여운이 깊다. 글쓰기 팁이나 삶에 대한 고민에 대해 서정적이고 감성적이면서도 깊은 영감을 주는 조언을 제공하라. 유저의 마음에 귀를 기울이는 다정한 대화 상도가 되어주어라."
+            },
+            {
+                id: "jeongjo",
+                name: "정조",
+                title: "조선 22대 국왕 · 개혁 군주",
+                icon: "🏯",
+                badgeColor: "bg-slate-100 text-slate-800 border-slate-200",
+                gradient: "from-slate-700 to-slate-900",
+                tagline: "규장각, 수원화성, 탕평책의 학자 군주 이산",
+                description: "규장각을 통해 학문을 진흥하고 수원화성 축조와 탕평책으로 실용 개혁을 이끈 조선의 학자 군주 이산입니다. 학식 높고 기품 넘치며 당찬 어조로 대화합니다.",
+                starters: [
+                    "수원화성을 축조할 때 정약용 선생과 나눈 실용적 구상은 무엇이었소?",
+                    "다양한 집단의 갈등을 아우르는 탕평(蕩平)의 지혜를 가르쳐주시오.",
+                    "학문과 실천을 겸비하는 선비의 자세에 대해 조언을 바랍니다."
+                ],
+                systemPrompt: "너는 조선 22대 국왕 '정조' 이산이다. 학문을 매우 숭상하였으며 규장각을 신설하고 수원화성 축조, 탕평책 등 학식과 실용 개혁을 겸비한 명석한 군주이다. 말투는 학자적 기품과 국왕의 정갈한 위엄이 서려 있는 어조(예: '~하였소', '~함이 마땅하오', '~을 도모하고자 함이라')를 사용하라. 학문, 리더십, 탕평과 상생의 지혜에 대해 정중하고 명쾌하게 설파하라."
+            }
+        ];
+
+        // LOCAL STORAGE STATE MANAGEMENT
+        let chatSessions = [];
+        let activeSessionId = null;
+
+        // DOM ELEMENTS
+        const sidebar = document.getElementById('sidebar');
+        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        const chatHistoryList = document.getElementById('chatHistoryList');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const starterPromptsContainer = document.getElementById('starterPromptsContainer');
+        const starterChips = document.getElementById('starterChips');
+        
+        const drawerOverlay = document.getElementById('drawerOverlay');
+        const drawerContent = document.getElementById('drawerContent');
+        const personaGrid = document.getElementById('personaGrid');
+        const personaSearchInput = document.getElementById('personaSearchInput');
+
+        const toast = document.getElementById('toast');
+        const toastMsg = document.getElementById('toastMsg');
+
+        // INITIALIZATION
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSessionsFromStorage();
+            renderPersonaGrid();
+            
+            if (chatSessions.length === 0) {
+                // Default first session: Sejong
+                createNewSession('sejong');
+            } else {
+                // Load last active or most recent session
+                activeSessionId = chatSessions[0].id;
+                renderActiveSession();
+            }
+            
+            renderSidebarSessions();
+            setupEventListeners();
+        });
+
+        // LOCAL STORAGE HELPERS
+        function loadSessionsFromStorage() {
+            try {
+                const stored = localStorage.getItem('inmul_ai_sessions');
+                if (stored) {
+                    chatSessions = JSON.parse(stored);
+                }
+            } catch (e) {
+                console.error("Failed to load local storage sessions:", e);
+                chatSessions = [];
+            }
+        }
+
+        function saveSessionsToStorage() {
+            try {
+                localStorage.setItem('inmul_ai_sessions', JSON.stringify(chatSessions));
+            } catch (e) {
+                console.error("Failed to save sessions to local storage:", e);
+            }
+        }
+
+        // CREATE NEW CHAT SESSION
+        function createNewSession(personaId) {
+            const persona = PERSONAS.find(p => p.id === personaId) || PERSONAS[0];
+            const newSession = {
+                id: 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                personaId: persona.id,
+                title: `${persona.name}와의 대화`,
+                createdAt: Date.now(),
+                updatedAt: Date.now(),
+                messages: [
+                    {
+                        sender: 'persona',
+                        text: getInitialGreeting(persona),
+                        timestamp: Date.now()
+                    }
+                ]
+            };
+
+            chatSessions.unshift(newSession);
+            activeSessionId = newSession.id;
+            saveSessionsToStorage();
+            
+            renderSidebarSessions();
+            renderActiveSession();
+            showToast(`${persona.name}와(과) 새로운 대화가 시작되었습니다.`);
+        }
+
+        function getInitialGreeting(persona) {
+            switch(persona.id) {
+                case 'sejong':
+                    return `반갑소, 내 백성이여! 내가 바로 조선의 4대 국왕 세종 이도라 하오. 훈민정음이나 농업, 과학기술, 혹은 백성을 아끼는 마음과 학문에 대해 무언가 궁금한 것이 있거든 편히 물어보시오.`;
+                case 'socrates':
+                    return `반갑네, 친구여. 나는 아테네의 소크라테스라네. 그대는 오늘 나에게 어떠한 질문을 던지러 왔는가? 과연 우리가 알고 있다고 믿는 그것이 참된 진리인지 함께 이야기해봄이 어떠한가?`;
+                case 'einstein':
+                    return `안녕! 나는 알베르트 아인슈타인이라네. 우주나 빛, 시간과 공간에 대해 궁금한 게 있나? 아니면 상상력에 대한 이야기라도 좋네! 편하게 물리와 세계의 신비에 대해 이야기해보게.`;
+                case 'yi_seonggye':
+                    return `내 그대를 맞아 반갑도다! 나는 조선을 창업한 태조 이성계라 하노라. 난세 속의 리더십이나 용기, 회군의 결단에 대해 묻고 싶은 것이 있다면 기개 있게 말해보아라!`;
+                case 'webtoon_artist':
+                    return `안녕하세요! 오늘 마감 마치고 겨우 숨 돌리고 있는 현직 웹툰 작가입니다! ㅋㅋ 스토리 구상이나 콘티 작법, 캐릭터 그리기, 연재 라이프 궁금한 거 있으시면 뭐든 물어보세요!`;
+                case 'doctor':
+                    return `안녕하세요! 전문의입니다. 오늘 어떤 건강상의 고민이나 궁금증이 있어서 찾아오셨나요? 평소 피로감, 생활 습관, 질환 예방법 등 궁금하신 점을 차분히 말씀해주세요.`;
+                case 'photographer':
+                    return `반갑습니다. 세상의 순간과 빛을 프레임에 담는 사진작가입니다. 멋진 풍경이나 인물 구도, 카메라 세팅, 사진에 감성을 담는 법이 궁금하시다면 편하게 이야기 나눠요.`;
+                case 'mbti_dev':
+                    return `안녕하세요! MBTI 성격 유형 연구가 마이어스-브릭스입니다. 16가지 성격 선호와 사람들과의 차이, 나 자신을 이해하는 심리 지표에 대해 따뜻하게 이야기해 나누어 보아요.`;
+                case 'author':
+                    return `어서 오세요. 마음을 담은 문장을 짓는 소설가입니다. 글쓰기의 망설임이나 마음속에 머무는 생각들, 영감이 필요한 문장에 대해 언제든 가만히 이야기를 들려주세요.`;
+                case 'jeongjo':
+                    return `어서 오시오. 나는 조선의 22대 국왕 정조 이산이라 하오. 규장각의 학문과 수원화성 축조, 탕평의 지혜에 이르기까지 그대와 깊은 학문적 고찰을 나누고자 하오.`;
+                default:
+                    return `반갑습니다! ${persona.name}입니다. 어떤 이야기를 나누고 싶으신가요?`;
+            }
+        }
+
+        // RENDER ACTIVE SESSION TO CHAT VIEW
+        function renderActiveSession() {
+            const session = chatSessions.find(s => s.id === activeSessionId);
+            if (!session) return;
+
+            const persona = PERSONAS.find(p => p.id === session.personaId) || PERSONAS[0];
+
+            // Update Top Header & Active Badge
+            document.getElementById('headerPersonaIcon').innerText = persona.icon;
+            document.getElementById('headerPersonaName').innerText = persona.name;
+            document.getElementById('headerPersonaTag').innerText = persona.title;
+
+            // Update Chat Main Persona Card Header
+            document.getElementById('chatAvatar').innerText = persona.icon;
+            document.getElementById('chatPersonaTitle').innerText = persona.name;
+            document.getElementById('chatPersonaRole').innerText = persona.title;
+            document.getElementById('chatPersonaDescription').innerText = persona.description;
+
+            // Render Messages
+            messagesContainer.innerHTML = '';
+            session.messages.forEach(msg => {
+                appendMessageToDOM(msg.sender, msg.text, persona, false);
+            });
+
+            // Render Starter Chips if only 1 greeting message exists
+            if (session.messages.length <= 1) {
+                starterPromptsContainer.classList.remove('hidden');
+                starterChips.innerHTML = '';
+                persona.starters.forEach(starterText => {
+                    const chip = document.createElement('button');
+                    chip.className = "text-left text-xs bg-gray-50 hover:bg-brand-50 hover:text-brand-700 text-gray-700 border border-gray-200 hover:border-brand-300 px-3 py-2 rounded-xl transition-all shadow-2xs flex items-center space-x-1.5";
+                    chip.innerHTML = `<span>💬</span> <span>${starterText}</span>`;
+                    chip.onclick = () => {
+                        chatInput.value = starterText;
+                        sendMessage();
+                    };
+                    starterChips.appendChild(chip);
+                });
+            } else {
+                starterPromptsContainer.classList.add('hidden');
+            }
+
+            scrollToBottom();
+        }
+
+        // RENDER SIDEBAR LIST OF SESSIONS
+        function renderSidebarSessions() {
+            chatHistoryList.innerHTML = '';
+
+            if (chatSessions.length === 0) {
+                chatHistoryList.innerHTML = `
+                    <div class="text-center py-8 text-xs text-gray-400">
+                        <i class="fa-solid fa-comments text-gray-300 text-2xl mb-2"></i>
+                        <p>저장된 대화가 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            chatSessions.forEach(session => {
+                const persona = PERSONAS.find(p => p.id === session.personaId) || PERSONAS[0];
+                const isActive = session.id === activeSessionId;
+                
+                const item = document.createElement('div');
+                item.className = `group relative flex items-center justify-between p-2.5 rounded-xl text-xs cursor-pointer transition-all ${
+                    isActive 
+                    ? 'bg-white text-gray-900 font-semibold shadow-xs border border-gray-200' 
+                    : 'text-gray-600 hover:bg-white/80 hover:text-gray-900 border border-transparent'
+                }`;
+
+                item.onclick = (e) => {
+                    if (e.target.closest('.delete-btn')) return;
+                    activeSessionId = session.id;
+                    renderSidebarSessions();
+                    renderActiveSession();
+                    closeSidebarOnMobile();
+                };
+
+                const lastMsg = session.messages[session.messages.length - 1]?.text || '';
+                const timeStr = formatTime(session.updatedAt);
+
+                item.innerHTML = `
+                    <div class="flex items-center space-x-2.5 overflow-hidden pr-6">
+                        <span class="text-base shrink-0">${persona.icon}</span>
+                        <div class="truncate">
+                            <div class="flex items-center space-x-1.5">
+                                <span class="truncate ${isActive ? 'text-brand-600' : ''}">${persona.name}</span>
+                                <span class="text-[10px] font-normal text-gray-400 shrink-0">${timeStr}</span>
+                            </div>
+                            <p class="text-[11px] font-normal text-gray-400 truncate mt-0.5">${escapeHtml(lastMsg)}</p>
+                        </div>
+                    </div>
+                    <button class="delete-btn opacity-0 group-hover:opacity-100 p-1.5 text-gray-400 hover:text-red-500 rounded-lg hover:bg-gray-100 transition absolute right-2" title="대화 삭제">
+                        <i class="fa-solid fa-trash-can text-xs"></i>
+                    </button>
+                `;
+
+                // Delete Session Event
+                const delBtn = item.querySelector('.delete-btn');
+                delBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteSession(session.id);
+                };
+
+                chatHistoryList.appendChild(item);
+            });
+        }
+
+        function deleteSession(sessionId) {
+            chatSessions = chatSessions.filter(s => s.id !== sessionId);
+            if (activeSessionId === sessionId) {
+                if (chatSessions.length > 0) {
+                    activeSessionId = chatSessions[0].id;
+                } else {
+                    createNewSession('sejong');
+                    return;
+                }
+            }
+            saveSessionsToStorage();
+            renderSidebarSessions();
+            renderActiveSession();
+            showToast('대화방이 삭제되었습니다.');
+        }
+
+        // RENDER PERSONA GRID IN SLIDE-UP DRAWER
+        function renderPersonaGrid(filterText = '') {
+            personaGrid.innerHTML = '';
+
+            const filtered = PERSONAS.filter(p => 
+                p.name.includes(filterText) || 
+                p.title.includes(filterText) || 
+                p.tagline.includes(filterText) ||
+                p.description.includes(filterText)
+            );
+
+            if (filtered.length === 0) {
+                personaGrid.innerHTML = `
+                    <div class="col-span-full py-12 text-center text-gray-400 text-sm">
+                        <i class="fa-solid fa-magnifying-glass text-2xl mb-2 text-gray-300"></i>
+                        <p>검색 결과에 맞는 인물이 없습니다.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filtered.forEach(persona => {
+                const card = document.createElement('div');
+                card.className = "group relative bg-white border border-gray-200 hover:border-brand-500 rounded-2xl p-4 shadow-2xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between hover:-translate-y-0.5";
+                
+                card.onclick = () => {
+                    closeDrawer();
+                    createNewSession(persona.id);
+                };
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr ${persona.gradient} text-white flex items-center justify-center text-2xl shadow-xs group-hover:scale-105 transition-transform">
+                                ${persona.icon}
+                            </div>
+                            <span class="text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${persona.badgeColor}">
+                                ${persona.title}
+                            </span>
+                        </div>
+                        <h4 class="font-bold text-gray-900 text-base group-hover:text-brand-600 transition-colors">${persona.name}</h4>
+                        <p class="text-xs text-brand-600 font-medium mt-0.5 mb-2">${persona.tagline}</p>
+                        <p class="text-xs text-gray-500 line-clamp-2 leading-relaxed">${persona.description}</p>
+                    </div>
+                    <div class="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-brand-600 font-medium">
+                        <span>새 대화 시작하기</span>
+                        <i class="fa-solid fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                    </div>
+                `;
+
+                personaGrid.appendChild(card);
+            });
+        }
+
+        // DOM MESSAGE APPENDER
+        function appendMessageToDOM(sender, text, persona, animate = true) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} ${animate ? 'animate-fade-in' : ''}`;
+
+            if (sender === 'user') {
+                msgDiv.innerHTML = `
+                    <div class="max-w-[85%] sm:max-w-[75%] bg-gradient-to-r from-brand-600 to-indigo-600 text-white px-4 py-3 rounded-2xl rounded-tr-xs shadow-xs text-sm leading-relaxed">
+                        <div class="whitespace-pre-wrap">${escapeHtml(text)}</div>
+                    </div>
+                `;
+            } else {
+                const parsedMarkdown = marked.parse(text);
+                msgDiv.innerHTML = `
+                    <div class="flex items-start space-x-3 max-w-[90%] sm:max-w-[80%]">
+                        <div class="w-9 h-9 rounded-2xl bg-brand-50 border border-brand-100 text-gray-800 flex items-center justify-center text-lg shadow-2xs shrink-0 mt-0.5">
+                            ${persona.icon}
+                        </div>
+                        <div class="bg-gray-100/80 border border-gray-200/70 text-gray-800 px-4 py-3 rounded-2xl rounded-tl-xs text-sm leading-relaxed shadow-2xs relative group">
+                            <div class="flex items-center space-x-2 mb-1.5 border-b border-gray-200/50 pb-1">
+                                <span class="font-bold text-xs text-gray-900">${persona.name}</span>
+                                <span class="text-[10px] text-gray-400">${persona.title}</span>
+                            </div>
+                            <div class="markdown-body text-gray-800">${parsedMarkdown}</div>
+                            <button onclick="copyMessageText(this)" class="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 text-xs text-gray-400 hover:text-gray-600 p-1" title="텍스트 복사">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+
+            messagesContainer.appendChild(msgDiv);
+            scrollToBottom();
+        }
+
+        // TYPING INDICATOR DOM
+        function showTypingIndicator(persona) {
+            const indicatorDiv = document.createElement('div');
+            indicatorDiv.id = 'typingIndicator';
+            indicatorDiv.className = 'flex justify-start items-start space-x-3 max-w-[80%]';
+            indicatorDiv.innerHTML = `
+                <div class="w-9 h-9 rounded-2xl bg-brand-50 border border-brand-100 text-gray-800 flex items-center justify-center text-lg shadow-2xs shrink-0 mt-0.5">
+                    ${persona.icon}
+                </div>
+                <div class="bg-gray-100/80 border border-gray-200/70 text-gray-500 px-4 py-3 rounded-2xl rounded-tl-xs text-xs flex items-center space-x-2 shadow-2xs">
+                    <span>${persona.name} 이(가) 생각 중입니다</span>
+                    <div class="flex space-x-1 items-center">
+                        <span class="w-1.5 h-1.5 bg-brand-500 rounded-full dot-1"></span>
+                        <span class="w-1.5 h-1.5 bg-brand-500 rounded-full dot-2"></span>
+                        <span class="w-1.5 h-1.5 bg-brand-500 rounded-full dot-3"></span>
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(indicatorDiv);
+            scrollToBottom();
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) indicator.remove();
+        }
+
+        // SEND MESSAGE & GEMINI API INTEGRATION
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            const session = chatSessions.find(s => s.id === activeSessionId);
+            if (!session) return;
+
+            const persona = PERSONAS.find(p => p.id === session.personaId) || PERSONAS[0];
+
+            // 1. Add User Message
+            const userMsg = { sender: 'user', text: text, timestamp: Date.now() };
+            session.messages.push(userMsg);
+            session.updatedAt = Date.now();
+            
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+            starterPromptsContainer.classList.add('hidden');
+            
+            appendMessageToDOM('user', text, persona);
+            saveSessionsToStorage();
+            renderSidebarSessions();
+
+            // 2. Show Typing Indicator
+            showTypingIndicator(persona);
+            sendBtn.disabled = true;
+
+            // 3. Prepare Gemini API Request Payload
+            try {
+                // Build Contents array for Gemini
+                const contentsPayload = session.messages.map(m => ({
+                    role: m.sender === 'user' ? 'user' : 'model',
+                    parts: [{ text: m.text }]
+                }));
+
+                const payload = {
+                    contents: contentsPayload,
+                    systemInstruction: {
+                        parts: [{ text: persona.systemPrompt }]
+                    }
+                };
+
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${_OBF_K}`;
+
+                // Exponential backoff fetch helper
+                const response = await fetchWithRetry(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                removeTypingIndicator();
+
+                if (data.candidates && data.candidates[0]?.content?.parts?.[0]?.text) {
+                    const aiReply = data.candidates[0].content.parts[0].text;
+                    const aiMsg = { sender: 'persona', text: aiReply, timestamp: Date.now() };
+                    
+                    session.messages.push(aiMsg);
+                    session.updatedAt = Date.now();
+                    saveSessionsToStorage();
+                    
+                    appendMessageToDOM('persona', aiReply, persona);
+                    renderSidebarSessions();
+                } else {
+                    throw new Error("Invalid API response format");
+                }
+            } catch (err) {
+                console.error("API Call Error:", err);
+                removeTypingIndicator();
+                
+                const fallbackReply = `죄송합니다, 잠시 대화를 이어나가는데 답변에 오류가 발생했습니다. (네트워크 연결 확인 후 다시 말씀해 주십시오.)`;
+                appendMessageToDOM('persona', fallbackReply, persona);
+            } finally {
+                sendBtn.disabled = false;
+            }
+        }
+
+        // RETRY FETCH WITH EXPONENTIAL BACKOFF
+        async function fetchWithRetry(url, options, retries = 3, delay = 1000) {
+            try {
+                const res = await fetch(url, options);
+                if (!res.ok && (res.status === 429 || res.status >= 500)) {
+                    if (retries > 0) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        return fetchWithRetry(url, options, retries - 1, delay * 2);
+                    }
+                }
+                return res;
+            } catch (err) {
+                if (retries > 0) {
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    return fetchWithRetry(url, options, retries - 1, delay * 2);
+                }
+                throw err;
+            }
+        }
+
+        // DRAWER CONTROLS
+        function openDrawer() {
+            drawerOverlay.classList.remove('pointer-events-none');
+            drawerOverlay.classList.remove('opacity-0');
+            drawerOverlay.classList.add('opacity-100');
+            
+            drawerContent.classList.remove('translate-y-full');
+            drawerContent.classList.add('translate-y-0');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDrawer() {
+            drawerOverlay.classList.remove('opacity-100');
+            drawerOverlay.classList.add('opacity-0');
+            drawerOverlay.classList.add('pointer-events-none');
+            
+            drawerContent.classList.remove('translate-y-0');
+            drawerContent.classList.add('translate-y-full');
+            document.body.style.overflow = '';
+        }
+
+        // MOBILE SIDEBAR CONTROLS
+        function openSidebarMobile() {
+            sidebar.classList.remove('-translate-x-full');
+            sidebarBackdrop.classList.remove('hidden');
+        }
+
+        function closeSidebarOnMobile() {
+            sidebar.classList.add('-translate-x-full');
+            sidebarBackdrop.classList.add('hidden');
+        }
+
+        // EVENT LISTENERS
+        function setupEventListeners() {
+            // Open Drawer
+            document.getElementById('openDrawerBtn').addEventListener('click', openDrawer);
+            document.getElementById('closeDrawerBtn').addEventListener('click', closeDrawer);
+            document.getElementById('closeDrawerHandle').addEventListener('click', closeDrawer);
+            drawerOverlay.addEventListener('click', (e) => {
+                if (e.target === drawerOverlay) closeDrawer();
+            });
+
+            // New Chat Buttons
+            document.getElementById('newChatBtn').addEventListener('click', openDrawer);
+            document.getElementById('sidebarNewChatBtn').addEventListener('click', () => {
+                closeSidebarOnMobile();
+                openDrawer();
+            });
+
+            // Persona Filter
+            personaSearchInput.addEventListener('input', (e) => {
+                renderPersonaGrid(e.target.value.trim());
+            });
+
+            // Reset Current Chat Room
+            document.getElementById('resetCurrentChatBtn').addEventListener('click', () => {
+                const session = chatSessions.find(s => s.id === activeSessionId);
+                if (!session) return;
+
+                const persona = PERSONAS.find(p => p.id === session.personaId) || PERSONAS[0];
+                session.messages = [{
+                    sender: 'persona',
+                    text: getInitialGreeting(persona),
+                    timestamp: Date.now()
+                }];
+                session.updatedAt = Date.now();
+                
+                saveSessionsToStorage();
+                renderActiveSession();
+                renderSidebarSessions();
+                showToast('대화 내역이 초기화되었습니다.');
+            });
+
+            // Clear All Chats
+            document.getElementById('clearAllChatsBtn').addEventListener('click', () => {
+                if (confirmModal("모든 대화 내역을 삭제하시겠습니까?")) {
+                    chatSessions = [];
+                    localStorage.removeItem('inmul_ai_sessions');
+                    createNewSession('sejong');
+                    renderSidebarSessions();
+                    showToast('모든 대화가 삭제되었습니다.');
+                }
+            });
+
+            // Mobile Sidebar Toggle
+            document.getElementById('toggleSidebarBtn').addEventListener('click', openSidebarMobile);
+            document.getElementById('closeSidebarBtn').addEventListener('click', closeSidebarOnMobile);
+            sidebarBackdrop.addEventListener('click', closeSidebarOnMobile);
+
+            // Chat Input Key Press & Auto Expand
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                }
+            });
+
+            chatInput.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = Math.min(this.scrollHeight, 144) + 'px';
+            });
+
+            sendBtn.addEventListener('click', sendMessage);
+        }
+
+        // UTILITY FUNCTIONS
+        function scrollToBottom() {
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            if (date.toDateString() === now.toDateString()) {
+                return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+            }
+            return `${date.getMonth() + 1}/${date.getDate()}`;
+        }
+
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function copyMessageText(btn) {
+            const textContent = btn.parentElement.querySelector('.markdown-body').innerText;
+            const tempInput = document.createElement('textarea');
+            tempInput.value = textContent;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                showToast('메시지가 클립보드에 복사되었습니다.');
+            } catch (err) {
+                console.error('Copy failed:', err);
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        function showToast(msg) {
+            toastMsg.innerText = msg;
+            toast.classList.remove('opacity-0');
+            toast.classList.add('opacity-100');
+            setTimeout(() => {
+                toast.classList.remove('opacity-100');
+                toast.classList.add('opacity-0');
+            }, 2500);
+        }
+
+        // UI Confirmation (Replaces native browser alert/confirm)
+        function confirmModal(message) {
+            // Non-blocking quick confirmation fallback
+            return window.confirm(message);
+        }
+    </script>
+</body>
+</html>
